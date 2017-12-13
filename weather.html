@@ -1,0 +1,196 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>The HTML5 Herald</title>
+        <meta name="description" content="The HTML5 Herald">
+        <meta name="author" content="SitePoint">
+        
+        <link rel="stylesheet" href="weather.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+        <!--[if lt IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
+        <![endif]-->
+    </head>
+
+    <body onload= "getLocation()" id = "body">
+        <div class = "container" id = "container">
+            <div>
+                <h2 id = "location" style = 'display:inline'></h2><span>   </span><span id = "time"></span>
+            </div>
+            <br>
+
+            <div>
+                <span id = "mainTemperature" style = 'font-size: 30px'></span><span id = "Farenheit" 
+                    style = 'font-size: 26px'> &#8457</span>
+                </div>
+            <br>
+
+            <div>
+                <p id = "description"></p>
+            </div>
+        
+            <div>
+                <span>Humidity: </span><span id = "humidity"></span><span> %</span>
+            </div>
+
+            <br>
+            
+            <div>
+                <span>Wind Speed: </span><span id = "windSpeed"></span><span> mph</span>
+            </div>
+
+            <br>
+            
+            <div>
+                <span>max Temperature: </span><span id = "maxTemp"></span><span> &#8457</span>
+            </div>
+
+            <br>
+            
+            <div>
+                <span>min Temperature: </span><span id = "minTemp"></span><span> &#8457</span>
+            </div>
+	    </div>
+    
+        
+        <script
+            src="https://code.jquery.com/jquery-3.2.1.min.js"
+            integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+            crossorigin="anonymous">
+        </script>
+
+        <script>
+            var x = document.getElementById("demo");
+            var latitude;
+            var longitude;
+
+            function convertTime(str) {
+                //var time = "16:30:00"; // your input
+                var time = str;
+
+                time = time.split(':'); // convert to array
+
+                // fetch
+                var hours = Number(time[0]);
+                var minutes = Number(time[1]);
+                
+                // calculate
+                var timeValue;
+
+                if (hours > 0 && hours <= 12)
+                {
+                    timeValue= "" + hours;
+                } else if (hours > 12)
+                {
+                    timeValue= "" + (hours - 12);
+                }
+                else if (hours == 0)
+                {
+                    timeValue= "12";
+                }
+ 
+                timeValue += (minutes < 10) ? ":0" + minutes : ":" + minutes;  // get minutes
+                //timeValue += (seconds < 10) ? ":0" + seconds : ":" + seconds;  // get seconds
+                timeValue += (hours >= 12) ? " P.M." : " A.M.";  // get AM/PM
+                return timeValue;
+            }
+
+            function getLocation() {
+                if (navigator.geolocation){
+                    navigator.geolocation.getCurrentPosition(showPosition);
+                }
+                else {
+                    x.innerHTML = "Geolocation is not supported by this browser.";
+                }
+            }   
+
+
+            function showPosition(position) {
+                latitude = position.coords.latitude;
+                longitude = position.coords.longitude;
+                console.log(latitude);
+                console.log(longitude);
+                // Ajax request
+                $.getJSON
+                ("http://api.openweathermap.org/data/2.5/weather?lat=" +
+                latitude + "&lon=" + longitude +
+                "&APPID=5337e04b6032d174e6c4770922c47dab", function(data){
+                    var rawJson = JSON.stringify(data);
+                    var json = JSON.parse(rawJson);
+                    console.log(json);
+
+                    var L = document.getElementById("location");
+                    L.innerHTML = json["name"];
+
+                    var T = document.getElementById("mainTemperature");
+                    var tm = (((json.main["temp"]* 9))/5)- 459.67;
+                    tm = Math.round((tm * 10)/10);
+                    T.innerHTML = tm;
+                    
+                    var H = document.getElementById("humidity");
+                    H.innerHTML = json.main["humidity"];
+
+                    var W= document.getElementById("windSpeed");
+                    W.innerHTML = json.wind["speed"];
+
+                    var maxT = document.getElementById("maxTemp");
+                    var mt = (((json.main["temp_max"]* 9))/5)- 459.67;
+                    mt = Math.round((mt * 10)/10);
+                    maxT.innerHTML = mt;
+
+                    var minT = document.getElementById("minTemp");
+                    var mit = (((json.main["temp_min"]* 9))/5)- 459.67;
+                    mit = Math.round((mit * 10)/10);
+                    minT.innerHTML = mit;
+                    var D = document.getElementById("description");
+                    D.innerHTML = json.weather[0].description;
+
+                    // update weather icon based on the returned weather description
+                    var weather = json.weather[0].description;
+                    var image = document.getElementById("icon");
+                    if(weather.indexOf("clear sky") >= 0){
+                        $('body').css('backgroundImage', 'url(images/sunny.jpg)');
+                    }
+                    else if(weather.indexOf("cloud") >= 0){
+                        $('body').css('backgroundImage', 'url(images/cloudy.jpg)');
+                    }
+                    else if (weather.indexOf("rain") >= 0){
+                        $('body').css('backgroundImage', 'url(images/rainyday.png)');
+                    }
+                    else if (weather.indexOf("snow") >= 0){
+                        $('body').css('backgroundImage', 'url(images/snow.jpg)');
+                    }
+                    else {
+                        $('body').css('backgroundImage', 'url(images/default.jpg)');
+                    }
+
+                    $.getJSON('http://api.geonames.org/timezoneJSON?lat=' +
+                        latitude + '&lng=' + longitude + '&username=mlaiouny',
+                        function(timezone){
+                            var rawTimeZone = JSON.stringify(timezone);
+                            var parsedTimeZone = JSON.parse(rawTimeZone);
+                            //console.log(parsedTimeZone);
+                            var dateTime = parsedTimeZone.time;
+                            timeFull = dateTime.substr(11);
+                            timeFull = convertTime(timeFull);
+                            //console.log(dateTime);
+                            //timeHour = dateTime.substr(-5,2);
+                            var T = document.getElementById("time");
+                            T.innerHTML = timeFull;
+                        });
+                    });
+                }
+        </script>
+
+        <footer class = "clearfix">
+            <div class = "footer-text" id = "footer-div">
+                <p>&copy 2017 All Rights Reserved. Designed and developed by Mo Laiouny</p>
+                <p>Made with <span id = "icon-heart" class = "fa fa-heart-o"></span><span> </span>in Washington DC, USA</p>
+            </div>
+        </footer>
+        
+    </body>
+</html>
